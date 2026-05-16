@@ -153,6 +153,19 @@ function showNotification(message) {
   setTimeout(() => notif.remove(), 3500);
 }
 
+function animateCounter(element, target, duration = 2000) {
+  let current = 0;
+  const step = target / (duration / 16);
+  const interval = setInterval(() => {
+    current += step;
+    if (current >= target) {
+      current = target;
+      clearInterval(interval);
+    }
+    element.textContent = Math.floor(current).toLocaleString();
+  }, 16);
+}
+
 function populateFilters() {
   regions.forEach((region) => {
     const option = document.createElement("option");
@@ -333,8 +346,10 @@ function startAmbience() {
   if (!ambienceContext) ambienceContext = new AudioContext();
   const ctx = ambienceContext;
 
+  // Create multiple sound layers
   const wind = ctx.createOscillator();
   wind.frequency.value = 110;
+  wind.type = "sine";
   const windGain = ctx.createGain();
   windGain.gain.value = 0.02;
   wind.connect(windGain).connect(ctx.destination);
@@ -346,11 +361,29 @@ function startAmbience() {
   birdGain.gain.value = 0.005;
   birds.connect(birdGain).connect(ctx.destination);
 
+  const rain = ctx.createOscillator();
+  rain.type = "square";
+  rain.frequency.value = 200;
+  const rainGain = ctx.createGain();
+  rainGain.gain.value = 0.01;
+  rain.connect(rainGain).connect(ctx.destination);
+
+  // Add some modulation
+  const lfo = ctx.createOscillator();
+  lfo.frequency.value = 0.5;
+  const lfoGain = ctx.createGain();
+  lfoGain.gain.value = 30;
+  lfo.connect(lfoGain);
+  lfoGain.connect(wind.frequency);
+
   wind.start();
   birds.start();
+  rain.start();
+  lfo.start();
 
-  ambienceNodes = [wind, birds];
+  ambienceNodes = [wind, birds, rain, lfo];
   els.audioToggle.textContent = "🔇 Mute";
+  showNotification("🎵 Nature ambience enabled - Forest sounds playing");
 }
 
 function stopAmbience() {
@@ -517,6 +550,36 @@ function initInteractions() {
       }
     });
   });
+
+  // Smooth scroll and intersection observer for animations
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.animation = 'slideInUp 0.6s ease-out forwards';
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.trail-card, .premium-card, .profile-card, .testimonial-card').forEach(el => {
+      observer.observe(el);
+    });
+  }
+
+  // Add smooth hover effects to interactive elements
+  document.querySelectorAll('[href^="#"]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      const href = link.getAttribute('href');
+      if (href !== '#') {
+        const target = document.querySelector(href);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    });
+  });
+}
 
   els.themeToggle.addEventListener("click", () => {
     document.body.classList.toggle("night");
