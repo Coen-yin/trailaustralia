@@ -348,8 +348,8 @@ function startAmbience() {
 
   // Create multiple sound layers
   const wind = ctx.createOscillator();
-  wind.frequency.value = 110;
   wind.type = "sine";
+  wind.frequency.value = 110;
   const windGain = ctx.createGain();
   windGain.gain.value = 0.02;
   wind.connect(windGain).connect(ctx.destination);
@@ -572,6 +572,7 @@ function initInteractions() {
     link.addEventListener('click', (e) => {
       const href = link.getAttribute('href');
       if (href !== '#') {
+        e.preventDefault();
         const target = document.querySelector(href);
         if (target) {
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });
