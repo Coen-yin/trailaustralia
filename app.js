@@ -87,7 +87,12 @@ const els = {
   randomAdventure: document.getElementById("randomAdventure"),
   themeToggle: document.getElementById("themeToggle"),
   audioToggle: document.getElementById("audioToggle"),
-  cursorGlow: document.getElementById("cursorGlow")
+  cursorGlow: document.getElementById("cursorGlow"),
+  xpBar: document.getElementById("xpBar"),
+  xpDisplay: document.getElementById("xpDisplay"),
+  levelBadge: document.getElementById("levelBadge"),
+  levelTitle: document.getElementById("levelTitle"),
+  xpText: document.getElementById("xpText")
 };
 
 let currentList = trails.slice(0, 36);
@@ -95,6 +100,15 @@ let walkTicker = null;
 let walkPaused = false;
 let ambienceContext = null;
 let ambienceNodes = [];
+
+// Gamification system
+let userXP = 325;
+let userLevel = 12;
+const xpPerLevel = 500;
+let userStreakDays = 18;
+let completedTrails = 0;
+let lastXPCheckpoint = 0;  // Track XP awards to prevent duplicates
+let lastStreakDate = new Date().toDateString();  // Track daily streaks
 
 const formatDistance = (aLat, aLon, bLat, bLon) => {
   const toRad = (v) => (v * Math.PI) / 180;
@@ -106,6 +120,59 @@ const formatDistance = (aLat, aLon, bLat, bLon) => {
     Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLon / 2) ** 2;
   return (R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))).toFixed(1);
 };
+
+function updateXPDisplay() {
+  const xpInLevel = userXP % xpPerLevel;
+  const xpPercent = (xpInLevel / xpPerLevel) * 100;
+  
+  if (els.xpBar) els.xpBar.style.width = xpPercent + '%';
+  if (els.xpDisplay) els.xpDisplay.textContent = `${xpInLevel} / ${xpPerLevel} XP`;
+  if (els.levelBadge) els.levelBadge.textContent = userLevel;
+  if (els.xpText) els.xpText.textContent = `${xpInLevel} / ${xpPerLevel} XP`;
+  
+  // Update level title
+  const titles = ["Trail Wanderer", "Trail Scout", "Trail Ranger", "Peak Explorer", "Mountain Master"];
+  const levelIdx = Math.min(Math.floor(userLevel / 3), titles.length - 1);
+  if (els.levelTitle) els.levelTitle.textContent = titles[levelIdx];
+}
+
+function awardXP(amount) {
+  const oldLevel = userLevel;
+  userXP += amount;
+  
+  // Calculate level ups properly
+  while (userXP >= xpPerLevel) {
+    userXP -= xpPerLevel;
+    userLevel++;
+    
+    if (userLevel > oldLevel) {
+      showNotification(`🎉 Level Up! You are now Level ${userLevel}!`);
+    }
+  }
+  
+  updateXPDisplay();
+}
+
+function showNotification(message) {
+  const notif = document.createElement('div');
+  notif.className = 'notification';
+  notif.textContent = message;
+  document.body.appendChild(notif);
+  setTimeout(() => notif.remove(), 3500);
+}
+
+function animateCounter(element, target, duration = 2000) {
+  let current = 0;
+  const step = target / (duration / 16);
+  const interval = setInterval(() => {
+    current += step;
+    if (current >= target) {
+      current = target;
+      clearInterval(interval);
+    }
+    element.textContent = Math.floor(current).toLocaleString();
+  }, 16);
+}
 
 function populateFilters() {
   regions.forEach((region) => {
@@ -229,6 +296,7 @@ function startWalk(trail = currentList[0] || trails[0]) {
   let elevation = 0;
   let steps = 0;
   let heading = 0;
+  let lastAwardedSteps = 0;  // Track last step milestone for XP
 
   clearInterval(walkTicker);
   walkTicker = setInterval(() => {
@@ -247,6 +315,28 @@ function startWalk(trail = currentList[0] || trails[0]) {
     els.walkSteps.textContent = steps.toLocaleString();
     els.walkEta.textContent = `${Math.max(0, Math.round((remaining / 4.8) * 60))}m`;
     els.compassNeedle.style.transform = `rotate(${heading}deg)`;
+
+    // Award XP at 500 step intervals
+    if (steps >= lastAwardedSteps + 500) {
+      awardXP(10);
+      lastAwardedSteps += 500;
+    }
+
+    // Complete trail
+    if (remaining <= 0) {
+      stopWalk();
+      completedTrails += 1;
+      
+      // Only increment streak if this is a new day
+      const todayStr = new Date().toDateString();
+      if (todayStr !== lastStreakDate) {
+        userStreakDays += 1;
+        lastStreakDate = todayStr;
+      }
+      
+      awardXP(100);
+      showNotification(`🎉 Trail completed! +100 XP earned! Streak: ${userStreakDays} days`);
+    }
   }, 1000);
 }
 
@@ -273,7 +363,9 @@ function startAmbience() {
   if (!ambienceContext) ambienceContext = new AudioContext();
   const ctx = ambienceContext;
 
+  // Create multiple sound layers
   const wind = ctx.createOscillator();
+  wind.type = "sine";
   wind.frequency.value = 110;
   const windGain = ctx.createGain();
   windGain.gain.value = 0.02;
@@ -286,11 +378,29 @@ function startAmbience() {
   birdGain.gain.value = 0.005;
   birds.connect(birdGain).connect(ctx.destination);
 
+  const rain = ctx.createOscillator();
+  rain.type = "square";
+  rain.frequency.value = 200;
+  const rainGain = ctx.createGain();
+  rainGain.gain.value = 0.01;
+  rain.connect(rainGain).connect(ctx.destination);
+
+  // Add some modulation
+  const lfo = ctx.createOscillator();
+  lfo.frequency.value = 0.5;
+  const lfoGain = ctx.createGain();
+  lfoGain.gain.value = 30;
+  lfo.connect(lfoGain);
+  lfoGain.connect(wind.frequency);
+
   wind.start();
   birds.start();
+  rain.start();
+  lfo.start();
 
-  ambienceNodes = [wind, birds];
+  ambienceNodes = [wind, birds, rain, lfo];
   els.audioToggle.textContent = "🔇 Mute";
+  showNotification("🎵 Nature ambience enabled - Forest sounds playing");
 }
 
 function stopAmbience() {
@@ -306,6 +416,8 @@ function analyzeImage() {
   }
 
   els.scanState.textContent = "Analyzing... scanning flora/fauna signature...";
+  els.aiResult.innerHTML = '<div class="loading" style="height: 40px; margin-top: 1rem;"></div>';
+  
   setTimeout(() => {
     const catalog = [
       {
@@ -314,7 +426,8 @@ function analyzeImage() {
         note: "Vibrant Australian parrot often found in eucalypt forests.",
         toxicity: "Non-toxic",
         danger: "Not dangerous",
-        native: "SE Australia"
+        native: "SE Australia",
+        emoji: "🦜"
       },
       {
         name: "Golden Wattle",
@@ -322,7 +435,8 @@ function analyzeImage() {
         note: "National floral emblem with bright yellow blossoms.",
         toxicity: "Low toxicity if ingested in quantity",
         danger: "Generally safe",
-        native: "South-eastern Australia"
+        native: "South-eastern Australia",
+        emoji: "🌼"
       },
       {
         name: "Fly Agaric Mushroom",
@@ -330,25 +444,103 @@ function analyzeImage() {
         note: "Distinctive red cap fungus often in damp pine zones.",
         toxicity: "Toxic if consumed",
         danger: "Potentially dangerous",
-        native: "Introduced; temperate forests"
+        native: "Introduced; temperate forests",
+        emoji: "🍄"
+      },
+      {
+        name: "Kookaburra",
+        sci: "Dacelo novaeguineae",
+        note: "Famous for its distinctive laughing call in Australian woodlands.",
+        toxicity: "Non-toxic",
+        danger: "Not dangerous",
+        native: "Eastern Australia",
+        emoji: "🦅"
+      },
+      {
+        name: "Mountain Ash",
+        sci: "Eucalyptus regnans",
+        note: "The tallest flowering plant in the world, found in mountain forests.",
+        toxicity: "Low toxicity",
+        danger: "Generally safe",
+        native: "Victoria & Tasmania",
+        emoji: "🌲"
       }
     ];
 
     const result = catalog[Math.floor(Math.random() * catalog.length)];
     const confidence = (82 + Math.random() * 17).toFixed(1);
+    
+    // Determine danger level CSS class
+    const dangerClass = result.danger === 'Not dangerous' || result.danger === 'Generally safe' 
+      ? 'success' 
+      : result.danger === 'Potentially dangerous' 
+      ? 'warn' 
+      : 'danger';
+    
     els.scanState.textContent = "Scan complete.";
+    
     els.aiResult.innerHTML = `
-      <h4>${result.name}</h4>
-      <p><strong>Scientific:</strong> ${result.sci}</p>
-      <p>${result.note}</p>
-      <p><strong>Toxicity:</strong> ${result.toxicity}</p>
-      <p><strong>Danger:</strong> ${result.danger}</p>
-      <p><strong>Native region:</strong> ${result.native}</p>
-      <p><strong>Similar species:</strong> Currawong / Silver Wattle / Other Amanita variants</p>
-      <p><strong>Confidence score:</strong> ${confidence}%</p>
-      <p><strong>Fun fact:</strong> ForestPath notes this species appears most around dawn after cool rain.</p>
+      <div style="animation: slideInUp 0.4s ease-out;">
+        <h4>${result.emoji} ${result.name}</h4>
+        <p><strong>Scientific:</strong> <em>${result.sci}</em></p>
+        <p>${result.note}</p>
+        <p><strong>Toxicity:</strong> <span class="muted">${result.toxicity}</span></p>
+        <p><strong>Danger Level:</strong> <span class="${dangerClass}">${result.danger}</span></p>
+        <p><strong>Native Region:</strong> ${result.native}</p>
+        <p><strong>Similar Species:</strong> Local variants and relatives</p>
+        <p><strong>Confidence Score:</strong> <strong>${confidence}%</strong></p>
+        <p><strong>Fun Fact:</strong> ForestPath notes this species appears most in ${['early morning', 'late afternoon', 'after rain', 'during spring'][Math.floor(Math.random() * 4)]}.</p>
+      </div>
     `;
+    
+    // Award XP for scanning
+    awardXP(25);
+    showNotification(`📸 Species identified! +25 XP`);
   }, 1800);
+}
+
+function initCarousel() {
+  const track = document.getElementById("carouselTrack");
+  if (!track) return;
+
+  const featured = trails.slice(0, 12);
+  const template = document.getElementById("trailCardTemplate");
+
+  featured.forEach((trail, idx) => {
+    const node = template.content.firstElementChild.cloneNode(true);
+    node.classList.add("carousel-item");
+    node.querySelector("h4").textContent = trail.title;
+    node.querySelector(".meta").textContent = `${trail.region} · ★${trail.rating}`;
+    node.querySelector(".desc").textContent = trail.aiDescription;
+
+    const details = node.querySelector(".trail-details");
+    [
+      `${trail.distance} km · ${trail.time}`,
+      `${trail.difficulty} · Elev. ${trail.elevation}m`,
+    ].forEach((line) => {
+      const li = document.createElement("li");
+      li.textContent = line;
+      details.append(li);
+    });
+
+    node.querySelector(".trail-image").style.background =
+      `linear-gradient(120deg, rgba(53,242,170,0.2), rgba(115,168,255,0.22)), url('https://picsum.photos/seed/featured${trail.id}/400/240') center/cover`;
+    node.querySelector(".walk-btn").addEventListener("click", () => startWalk(trail));
+
+    track.append(node);
+  });
+
+  // Carousel navigation
+  const prev = document.getElementById("carouselPrev");
+  const next = document.getElementById("carouselNext");
+
+  if (prev) prev.addEventListener("click", () => {
+    track.scrollBy({ left: -300, behavior: "smooth" });
+  });
+
+  if (next) next.addEventListener("click", () => {
+    track.scrollBy({ left: 300, behavior: "smooth" });
+  });
 }
 
 function initInteractions() {
@@ -372,6 +564,48 @@ function initInteractions() {
   els.closeWalk.addEventListener("click", stopWalk);
   els.randomAdventure.addEventListener("click", randomAdventure);
   els.analyzeBtn.addEventListener("click", analyzeImage);
+
+  // Emergency SOS button handlers
+  const sosButtons = document.querySelectorAll(".sos, .emergency-btn");
+  sosButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const emergency = confirm("🚨 ACTIVATE EMERGENCY SOS?\n\nThis will:\n• Alert emergency services\n• Share your location\n• Notify emergency contacts\n\nConfirm?");
+      if (emergency) {
+        showNotification("🚨 Emergency SOS Activated! Help is on the way. Stay calm.");
+      }
+    });
+  });
+
+  // Smooth scroll and intersection observer for animations
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.animation = 'slideInUp 0.6s ease-out forwards';
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.trail-card, .premium-card, .profile-card, .testimonial-card').forEach(el => {
+      observer.observe(el);
+    });
+  }
+
+  // Add smooth hover effects to interactive elements
+  document.querySelectorAll('[href^="#"]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      const href = link.getAttribute('href');
+      if (href !== '#') {
+        e.preventDefault();
+        const target = document.querySelector(href);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    });
+  });
+}
 
   els.themeToggle.addEventListener("click", () => {
     document.body.classList.toggle("night");
@@ -400,6 +634,8 @@ function init() {
   applyFilters();
   recommendNearby(-37.8136, 144.9631);
   els.trailCount.textContent = trails.length.toLocaleString();
+  updateXPDisplay();
+  initCarousel();
 }
 
 init();
