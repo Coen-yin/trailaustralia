@@ -441,6 +441,50 @@ function analyzeImage() {
   }, 1800);
 }
 
+function initCarousel() {
+  const track = document.getElementById("carouselTrack");
+  if (!track) return;
+
+  const featured = trails.slice(0, 12);
+  const template = document.getElementById("trailCardTemplate");
+
+  featured.forEach((trail, idx) => {
+    const node = template.content.firstElementChild.cloneNode(true);
+    node.classList.add("carousel-item");
+    node.querySelector("h4").textContent = trail.title;
+    node.querySelector(".meta").textContent = `${trail.region} · ★${trail.rating}`;
+    node.querySelector(".desc").textContent = trail.aiDescription;
+
+    const details = node.querySelector(".trail-details");
+    [
+      `${trail.distance} km · ${trail.time}`,
+      `${trail.difficulty} · Elev. ${trail.elevation}m`,
+    ].forEach((line) => {
+      const li = document.createElement("li");
+      li.textContent = line;
+      details.append(li);
+    });
+
+    node.querySelector(".trail-image").style.background =
+      `linear-gradient(120deg, rgba(53,242,170,0.2), rgba(115,168,255,0.22)), url('https://picsum.photos/seed/featured${trail.id}/400/240') center/cover`;
+    node.querySelector(".walk-btn").addEventListener("click", () => startWalk(trail));
+
+    track.append(node);
+  });
+
+  // Carousel navigation
+  const prev = document.getElementById("carouselPrev");
+  const next = document.getElementById("carouselNext");
+
+  if (prev) prev.addEventListener("click", () => {
+    track.scrollBy({ left: -300, behavior: "smooth" });
+  });
+
+  if (next) next.addEventListener("click", () => {
+    track.scrollBy({ left: 300, behavior: "smooth" });
+  });
+}
+
 function initInteractions() {
   [els.searchInput, els.regionFilter, els.difficultyFilter].forEach((el) => {
     el.addEventListener("input", applyFilters);
@@ -502,6 +546,7 @@ function init() {
   recommendNearby(-37.8136, 144.9631);
   els.trailCount.textContent = trails.length.toLocaleString();
   updateXPDisplay();
+  initCarousel();
 }
 
 init();

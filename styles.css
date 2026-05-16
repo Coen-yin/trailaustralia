@@ -994,6 +994,79 @@ select {
   margin-top: 0.2rem;
 }
 
+/* Featured Carousel */
+.featured-carousel {
+  margin-top: 1.4rem;
+}
+
+.carousel-container {
+  position: relative;
+  overflow: hidden;
+  padding: 1rem;
+  margin-top: 0.8rem;
+}
+
+.carousel-track {
+  display: flex;
+  gap: 0.8rem;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 0.5rem 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.carousel-track::-webkit-scrollbar {
+  height: 4px;
+}
+
+.carousel-track::-webkit-scrollbar-track {
+  background: rgba(157, 194, 173, 0.1);
+  border-radius: 2px;
+}
+
+.carousel-track::-webkit-scrollbar-thumb {
+  background: rgba(53, 242, 170, 0.4);
+  border-radius: 2px;
+}
+
+.carousel-item {
+  flex-shrink: 0;
+  width: 280px;
+  animation: slideInUp 0.5s ease-out;
+}
+
+.carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  background: rgba(53, 242, 170, 0.2);
+  border: 1px solid rgba(53, 242, 170, 0.4);
+  color: var(--accent);
+  font-size: 1.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all var(--trans-smooth);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.carousel-btn:hover {
+  background: rgba(53, 242, 170, 0.4);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-btn.prev {
+  left: 1rem;
+}
+
+.carousel-btn.next {
+  right: 1rem;
+}
+
 /* Enhanced Footer */
 .footer {
   margin-top: 2rem;
@@ -1068,14 +1141,29 @@ select {
   .walk-mode-preview,
   .footer,
   .gamification-grid,
-  .safety-grid {
+  .safety-grid,
+  .social-grid,
+  .premium-grid,
+  .testimonials-grid,
+  .carousel-track {
     display: block;
   }
 
   .gamification-grid > *,
   .safety-grid > *,
-  .search-grid > * {
+  .search-grid > *,
+  .social-grid,
+  .premium-grid > *,
+  .testimonials-grid > * {
     margin-bottom: 0.6rem;
+  }
+
+  .carousel-track {
+    flex-wrap: wrap;
+  }
+
+  .carousel-item {
+    width: calc(50% - 0.4rem) !important;
   }
 
   .top-nav nav,
@@ -1103,5 +1191,13 @@ select {
 
   .trail-card {
     animation-delay: 0 !important;
+  }
+
+  .footer {
+    grid-template-columns: 1fr !important;
+  }
+
+  .footer-links {
+    grid-template-columns: 1fr;
   }
 }
