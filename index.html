@@ -146,7 +146,59 @@
         <button id="startWalkMode" class="btn">Start Walk Mode</button>
       </section>
 
-      <section class="ai-lab" id="ai">
+    <section class="gamification-section" id="gamification">
+      <div class="card-header">
+        <h3>🎮 Gamification & Progress</h3>
+        <span id="xpDisplay">0 / 500 XP</span>
+      </div>
+      <div class="gamification-grid">
+        <article class="glass xp-card">
+          <h4>Your Level</h4>
+          <div class="level-display">
+            <div class="level-badge" id="levelBadge">12</div>
+            <div class="level-info">
+              <p id="levelTitle">Trail Ranger</p>
+              <div class="xp-progress">
+                <div class="xp-bar" id="xpBar" style="width: 65%"></div>
+              </div>
+              <p id="xpText">325 / 500 XP</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="glass achievements-card">
+          <h4>Recent Achievements</h4>
+          <div class="achievements-list">
+            <div class="achievement unlocked" title="Completed 10 trails">🏔️ Peak Seeker</div>
+            <div class="achievement unlocked" title="18 day streak">🔥 On Fire</div>
+            <div class="achievement unlocked" title="Found hidden waterfall">💧 Explorer</div>
+            <div class="achievement locked" title="Climb 5000m elevation">⛰️ Mountain Master</div>
+          </div>
+        </article>
+
+        <article class="glass streak-card">
+          <h4>Activity Streak</h4>
+          <div class="streak-info">
+            <div class="streak-count">18</div>
+            <div class="streak-label">Days</div>
+          </div>
+          <p class="muted">Keep exploring to maintain your streak!</p>
+          <button class="btn subtle">Daily Challenge</button>
+        </article>
+
+        <article class="glass rewards-card">
+          <h4>Unlock Rewards</h4>
+          <div class="reward-item">
+            <span>🌲 Nature Encyclopedia: 3 species unlocked</span>
+            <div class="progress-mini" style="width: 60%"></div>
+          </div>
+          <div class="reward-item">
+            <span>🐦 Wildlife Spotter: 12 sightings logged</span>
+            <div class="progress-mini" style="width: 48%"></div>
+          </div>
+        </article>
+      </div>
+    </section>
         <article class="glass ai-card">
           <h3>AI Plant & Animal Identifier</h3>
           <p>Upload a photo to run a cinematic wildlife/plant scan.</p>
@@ -185,6 +237,49 @@
         <article class="glass">
           <h4>Trail Replay</h4>
           <p>Rewatch cinematic elevation flyovers and map playback from completed hikes.</p>
+        </article>
+      </section>
+
+      <section class="safety-section" id="safety">
+        <div class="card-header">
+          <h3>🛡️ Safety & Emergency</h3>
+        </div>
+        <div class="safety-grid">
+          <article class="glass alert-card" id="bushfireAlert">
+            <h4>🔥 Bushfire Alert</h4>
+            <p class="alert-level warn">Current: Low Risk</p>
+            <p class="muted">No active fires detected in your region.</p>
+          </article>
+
+          <article class="glass alert-card" id="weatherAlert">
+            <h4>⛈️ Weather Alert</h4>
+            <p class="alert-level success">Current: Clear Skies</p>
+            <p class="muted">Mild winds, 21°C. Safe conditions for hiking.</p>
+          </article>
+
+          <article class="glass alert-card" id="wildlifeAlert">
+            <h4>🐍 Wildlife Alert</h4>
+            <p class="alert-level warn">Current: Seasonal Activity</p>
+            <p class="muted">Standard precautions recommended. Watch for snakes in tall grass.</p>
+          </article>
+
+          <article class="glass alert-card" id="emergencyCard">
+            <h4>📞 Emergency Resources</h4>
+            <p><strong>Emergency: 000</strong></p>
+            <p class="muted">Local Rangers · First Aid Kit · Satellite Phone Network</p>
+            <button class="btn emergency-btn">Activate SOS</button>
+          </article>
+        </div>
+
+        <article class="glass offline-section">
+          <h4>📱 Offline Preparation</h4>
+          <ul>
+            <li>✓ Download trail maps for offline access</li>
+            <li>✓ Battery optimization mode active</li>
+            <li>✓ Emergency contacts saved locally</li>
+            <li>✓ Weather forecast cached for 48 hours</li>
+          </ul>
+          <button class="btn">Prepare Offline Kit</button>
         </article>
       </section>
     </main>

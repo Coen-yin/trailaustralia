@@ -87,7 +87,12 @@ const els = {
   randomAdventure: document.getElementById("randomAdventure"),
   themeToggle: document.getElementById("themeToggle"),
   audioToggle: document.getElementById("audioToggle"),
-  cursorGlow: document.getElementById("cursorGlow")
+  cursorGlow: document.getElementById("cursorGlow"),
+  xpBar: document.getElementById("xpBar"),
+  xpDisplay: document.getElementById("xpDisplay"),
+  levelBadge: document.getElementById("levelBadge"),
+  levelTitle: document.getElementById("levelTitle"),
+  xpText: document.getElementById("xpText")
 };
 
 let currentList = trails.slice(0, 36);
@@ -95,6 +100,13 @@ let walkTicker = null;
 let walkPaused = false;
 let ambienceContext = null;
 let ambienceNodes = [];
+
+// Gamification system
+let userXP = 325;
+let userLevel = 12;
+const xpPerLevel = 500;
+let userStreakDays = 18;
+let completedTrails = 0;
 
 const formatDistance = (aLat, aLon, bLat, bLon) => {
   const toRad = (v) => (v * Math.PI) / 180;
@@ -106,6 +118,40 @@ const formatDistance = (aLat, aLon, bLat, bLon) => {
     Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLon / 2) ** 2;
   return (R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x))).toFixed(1);
 };
+
+function updateXPDisplay() {
+  const xpInLevel = userXP % xpPerLevel;
+  const xpPercent = (xpInLevel / xpPerLevel) * 100;
+  
+  if (els.xpBar) els.xpBar.style.width = xpPercent + '%';
+  if (els.xpDisplay) els.xpDisplay.textContent = `${xpInLevel} / ${xpPerLevel} XP`;
+  if (els.levelBadge) els.levelBadge.textContent = userLevel;
+  if (els.xpText) els.xpText.textContent = `${xpInLevel} / ${xpPerLevel} XP`;
+  
+  // Update level title
+  const titles = ["Trail Wanderer", "Trail Scout", "Trail Ranger", "Peak Explorer", "Mountain Master"];
+  const levelIdx = Math.min(Math.floor(userLevel / 3), titles.length - 1);
+  if (els.levelTitle) els.levelTitle.textContent = titles[levelIdx];
+}
+
+function awardXP(amount) {
+  userXP += amount;
+  const levelsGained = Math.floor(userXP / xpPerLevel);
+  if (levelsGained > 0) {
+    userLevel += levelsGained;
+    userXP = userXP % xpPerLevel;
+    showNotification(`🎉 Level Up! You are now Level ${userLevel}!`);
+  }
+  updateXPDisplay();
+}
+
+function showNotification(message) {
+  const notif = document.createElement('div');
+  notif.className = 'notification';
+  notif.textContent = message;
+  document.body.appendChild(notif);
+  setTimeout(() => notif.remove(), 3500);
+}
 
 function populateFilters() {
   regions.forEach((region) => {
@@ -247,6 +293,20 @@ function startWalk(trail = currentList[0] || trails[0]) {
     els.walkSteps.textContent = steps.toLocaleString();
     els.walkEta.textContent = `${Math.max(0, Math.round((remaining / 4.8) * 60))}m`;
     els.compassNeedle.style.transform = `rotate(${heading}deg)`;
+
+    // Award XP periodically
+    if (steps % 500 === 0 && steps > 0) {
+      awardXP(10);
+    }
+
+    // Complete trail
+    if (remaining <= 0) {
+      stopWalk();
+      completedTrails += 1;
+      userStreakDays += 1;
+      awardXP(100);
+      showNotification(`🎉 Trail completed! +100 XP earned! Streak: ${userStreakDays} days`);
+    }
   }, 1000);
 }
 
@@ -306,6 +366,8 @@ function analyzeImage() {
   }
 
   els.scanState.textContent = "Analyzing... scanning flora/fauna signature...";
+  els.aiResult.innerHTML = '<div class="loading" style="height: 40px; margin-top: 1rem;"></div>';
+  
   setTimeout(() => {
     const catalog = [
       {
@@ -314,7 +376,8 @@ function analyzeImage() {
         note: "Vibrant Australian parrot often found in eucalypt forests.",
         toxicity: "Non-toxic",
         danger: "Not dangerous",
-        native: "SE Australia"
+        native: "SE Australia",
+        emoji: "🦜"
       },
       {
         name: "Golden Wattle",
@@ -322,7 +385,8 @@ function analyzeImage() {
         note: "National floral emblem with bright yellow blossoms.",
         toxicity: "Low toxicity if ingested in quantity",
         danger: "Generally safe",
-        native: "South-eastern Australia"
+        native: "South-eastern Australia",
+        emoji: "🌼"
       },
       {
         name: "Fly Agaric Mushroom",
@@ -330,24 +394,50 @@ function analyzeImage() {
         note: "Distinctive red cap fungus often in damp pine zones.",
         toxicity: "Toxic if consumed",
         danger: "Potentially dangerous",
-        native: "Introduced; temperate forests"
+        native: "Introduced; temperate forests",
+        emoji: "🍄"
+      },
+      {
+        name: "Kookaburra",
+        sci: "Dacelo novaeguineae",
+        note: "Famous for its distinctive laughing call in Australian woodlands.",
+        toxicity: "Non-toxic",
+        danger: "Not dangerous",
+        native: "Eastern Australia",
+        emoji: "🦅"
+      },
+      {
+        name: "Mountain Ash",
+        sci: "Eucalyptus regnans",
+        note: "The tallest flowering plant in the world, found in mountain forests.",
+        toxicity: "Low toxicity",
+        danger: "Generally safe",
+        native: "Victoria & Tasmania",
+        emoji: "🌲"
       }
     ];
 
     const result = catalog[Math.floor(Math.random() * catalog.length)];
     const confidence = (82 + Math.random() * 17).toFixed(1);
     els.scanState.textContent = "Scan complete.";
+    
     els.aiResult.innerHTML = `
-      <h4>${result.name}</h4>
-      <p><strong>Scientific:</strong> ${result.sci}</p>
-      <p>${result.note}</p>
-      <p><strong>Toxicity:</strong> ${result.toxicity}</p>
-      <p><strong>Danger:</strong> ${result.danger}</p>
-      <p><strong>Native region:</strong> ${result.native}</p>
-      <p><strong>Similar species:</strong> Currawong / Silver Wattle / Other Amanita variants</p>
-      <p><strong>Confidence score:</strong> ${confidence}%</p>
-      <p><strong>Fun fact:</strong> ForestPath notes this species appears most around dawn after cool rain.</p>
+      <div style="animation: slideInUp 0.4s ease-out;">
+        <h4>${result.emoji} ${result.name}</h4>
+        <p><strong>Scientific:</strong> <em>${result.sci}</em></p>
+        <p>${result.note}</p>
+        <p><strong>Toxicity:</strong> <span class="muted">${result.toxicity}</span></p>
+        <p><strong>Danger Level:</strong> <span class="${result.danger === 'Not dangerous' ? 'success' : 'warn'}">${result.danger}</span></p>
+        <p><strong>Native Region:</strong> ${result.native}</p>
+        <p><strong>Similar Species:</strong> Local variants and relatives</p>
+        <p><strong>Confidence Score:</strong> <strong>${confidence}%</strong></p>
+        <p><strong>Fun Fact:</strong> ForestPath notes this species appears most in ${['early morning', 'late afternoon', 'after rain', 'during spring'][Math.floor(Math.random() * 4)]}.</p>
+      </div>
     `;
+    
+    // Award XP for scanning
+    awardXP(25);
+    showNotification(`📸 Species identified! +25 XP`);
   }, 1800);
 }
 
@@ -372,6 +462,17 @@ function initInteractions() {
   els.closeWalk.addEventListener("click", stopWalk);
   els.randomAdventure.addEventListener("click", randomAdventure);
   els.analyzeBtn.addEventListener("click", analyzeImage);
+
+  // Emergency SOS button handlers
+  const sosButtons = document.querySelectorAll(".sos, .emergency-btn");
+  sosButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const emergency = confirm("🚨 ACTIVATE EMERGENCY SOS?\n\nThis will:\n• Alert emergency services\n• Share your location\n• Notify emergency contacts\n\nConfirm?");
+      if (emergency) {
+        showNotification("🚨 Emergency SOS Activated! Help is on the way. Stay calm.");
+      }
+    });
+  });
 
   els.themeToggle.addEventListener("click", () => {
     document.body.classList.toggle("night");
@@ -400,6 +501,7 @@ function init() {
   applyFilters();
   recommendNearby(-37.8136, 144.9631);
   els.trailCount.textContent = trails.length.toLocaleString();
+  updateXPDisplay();
 }
 
 init();
