@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ForestPath Australia</title>
+    <meta
+      name="description"
+      content="ForestPath Australia — immersive trail discovery, walk mode, AI wildlife explorer, and adventure planning for Australian nature lovers."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="cursor-glow" id="cursorGlow"></div>
+    <div class="aurora-layer"></div>
+
+    <header class="top-nav glass">
+      <div class="brand">
+        <span class="brand-mark">🌿</span>
+        <div>
+          <h1>ForestPath Australia</h1>
+          <p>Explore beyond the map</p>
+        </div>
+      </div>
+      <nav>
+        <a href="#explore">Explore</a>
+        <a href="#map">Map</a>
+        <a href="#walk">Walk Mode</a>
+        <a href="#ai">AI Identify</a>
+      </nav>
+      <div class="header-actions">
+        <button id="audioToggle" class="btn subtle">🌧️ Ambience</button>
+        <button id="themeToggle" class="btn">🌙 Night</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" id="home">
+        <div class="hero-content">
+          <p class="eyebrow">Cinematic trail intelligence platform</p>
+          <h2>Discover Australia’s Hidden Forest Paths</h2>
+          <p>
+            Live discovery of trails, waterfalls, wildlife hotspots, mountain climbs,
+            and hidden tracks — all with immersive walk guidance and AI nature tools.
+          </p>
+          <div class="hero-actions">
+            <button id="locateBtn" class="btn">📍 Trails Near Me</button>
+            <button id="randomAdventure" class="btn subtle">🎲 Random Adventure</button>
+          </div>
+          <div class="hero-stats">
+            <article class="glass">
+              <strong id="trailCount">0</strong>
+              <span>Mock Trails</span>
+            </article>
+            <article class="glass">
+              <strong id="activeUsers">52.1k</strong>
+              <span>Explorers Today</span>
+            </article>
+            <article class="glass">
+              <strong id="wildlifeSpots">1,281</strong>
+              <span>Wildlife Sightings</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="search-panel glass" id="explore">
+        <h3>Search trails near me</h3>
+        <div class="search-grid">
+          <input type="search" id="searchInput" placeholder="Search by trail, forest, park, region..." />
+          <select id="regionFilter">
+            <option value="all">All Regions</option>
+          </select>
+          <select id="difficultyFilter">
+            <option value="all">Any Difficulty</option>
+            <option value="Easy">Easy</option>
+            <option value="Moderate">Moderate</option>
+            <option value="Hard">Hard</option>
+            <option value="Extreme">Extreme</option>
+          </select>
+          <button id="resetFilters" class="btn subtle">Reset</button>
+        </div>
+      </section>
+
+      <section class="map-and-feed" id="map">
+        <article class="map-card glass">
+          <div class="card-header">
+            <h3>Live Interactive Trail Map</h3>
+            <div class="mode-chips">
+              <span>Satellite</span>
+              <span>Terrain</span>
+              <span>Compass</span>
+            </div>
+          </div>
+          <div class="map-shell">
+            <iframe
+              title="OpenStreetMap Australia"
+              src="https://www.openstreetmap.org/export/embed.html?bbox=112.0%2C-44.5%2C154.0%2C-10.5&layer=mapnik"
+              loading="lazy"
+            ></iframe>
+            <div class="map-overlay glass">
+              <p id="locationStatus">Location unavailable — click “Trails Near Me”.</p>
+              <p id="weatherStatus">Weather: Mild · 21°C · Wind 12km/h</p>
+              <p id="sunStatus">Sunrise 6:41 · Sunset 5:12</p>
+            </div>
+          </div>
+          <div id="nearbyRecommendations" class="recommendations"></div>
+        </article>
+
+        <aside class="community-feed glass">
+          <h3>Community Live Feed</h3>
+          <div id="feedList"></div>
+          <div class="leaderboard">
+            <h4>Weekly Leaderboard</h4>
+            <ol>
+              <li>Skye M — 188 km</li>
+              <li>Luca T — 162 km</li>
+              <li>Harper N — 141 km</li>
+            </ol>
+          </div>
+        </aside>
+      </section>
+
+      <section class="trails-section">
+        <div class="card-header">
+          <h3>Featured Australian Trails</h3>
+          <span id="resultCount">0 results</span>
+        </div>
+        <div id="trailsGrid" class="trails-grid"></div>
+      </section>
+
+      <section class="walk-mode-preview glass" id="walk">
+        <div>
+          <h3>Live Walk Mode</h3>
+          <p>
+            Fullscreen navigation simulation with pace, calories, ETA, compass, elevation,
+            SOS, battery and hydration reminders.
+          </p>
+        </div>
+        <button id="startWalkMode" class="btn">Start Walk Mode</button>
+      </section>
+
+      <section class="ai-lab" id="ai">
+        <article class="glass ai-card">
+          <h3>AI Plant & Animal Identifier</h3>
+          <p>Upload a photo to run a cinematic wildlife/plant scan.</p>
+          <input type="file" id="photoInput" accept="image/*" />
+          <button id="analyzeBtn" class="btn">Analyze Image</button>
+          <div id="scanState" class="scan-state">Awaiting image...</div>
+          <div id="aiResult" class="ai-result"></div>
+        </article>
+        <article class="glass stats-card">
+          <h3>Gamification & Safety</h3>
+          <ul>
+            <li>XP Level: <strong id="xpLevel">Trail Ranger 12</strong></li>
+            <li>Streak: <strong>18 days</strong></li>
+            <li>Daily challenge: <strong>Find 2 hidden lookouts</strong></li>
+            <li>Bushfire alert: <strong class="warn">Low</strong></li>
+            <li>Heat warning: <strong class="warn">Moderate</strong></li>
+            <li>Snake risk index: <strong class="warn">Seasonal</strong></li>
+          </ul>
+          <button class="btn subtle">Emergency SOS Demo</button>
+        </article>
+      </section>
+
+      <section class="premium-grid">
+        <article class="glass">
+          <h4>AI Trip Planner</h4>
+          <p>Optimized route suggestions based on difficulty, weather, and daylight windows.</p>
+        </article>
+        <article class="glass">
+          <h4>Night + Stargazing Mode</h4>
+          <p>Low-light UI, celestial overlays, and dark-sky trail recommendations.</p>
+        </article>
+        <article class="glass">
+          <h4>Wildlife Spotting Tracker</h4>
+          <p>Track sightings, unlock encyclopedia entries, and earn rare explorer badges.</p>
+        </article>
+        <article class="glass">
+          <h4>Trail Replay</h4>
+          <p>Rewatch cinematic elevation flyovers and map playback from completed hikes.</p>
+        </article>
+      </section>
+    </main>
+
+    <footer class="glass footer">
+      <div>
+        <h5>ForestPath Australia</h5>
+        <p>Built for nature lovers, hikers, and adventurers exploring Australia.</p>
+      </div>
+      <div>
+        <p>Mock app preview · No backend required · HTML/CSS/JavaScript only</p>
+      </div>
+    </footer>
+
+    <section id="walkOverlay" class="walk-overlay hidden">
+      <div class="walk-top">
+        <h3>Walk Mode · <span id="walkTrailName">-</span></h3>
+        <div>
+          <button id="pauseWalk" class="btn subtle">Pause</button>
+          <button id="closeWalk" class="btn">Exit</button>
+        </div>
+      </div>
+      <div class="walk-grid">
+        <article class="glass"><p>Distance Remaining</p><strong id="walkDistance">8.4 km</strong></article>
+        <article class="glass"><p>Pace</p><strong id="walkPace">5.1 km/h</strong></article>
+        <article class="glass"><p>Calories</p><strong id="walkCalories">0 kcal</strong></article>
+        <article class="glass"><p>Elevation</p><strong id="walkElevation">0 m</strong></article>
+        <article class="glass"><p>Steps</p><strong id="walkSteps">0</strong></article>
+        <article class="glass"><p>ETA</p><strong id="walkEta">2h 41m</strong></article>
+      </div>
+      <div class="walk-compass glass">
+        <span id="compassNeedle">🧭 N</span>
+        <p>AR-Style direction overlay simulation active</p>
+      </div>
+      <button class="sos">🚨 Emergency SOS</button>
+    </section>
+
+    <template id="trailCardTemplate">
+      <article class="trail-card glass">
+        <div class="trail-image"></div>
+        <div class="trail-body">
+          <h4></h4>
+          <p class="meta"></p>
+          <p class="desc"></p>
+          <ul class="trail-details"></ul>
+          <div class="trail-actions">
+            <button class="btn walk-btn">Start Trail</button>
+            <span class="badge">Offline Ready</span>
+          </div>
+        </div>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
