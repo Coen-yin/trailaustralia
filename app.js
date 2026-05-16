@@ -107,6 +107,8 @@ let userLevel = 12;
 const xpPerLevel = 500;
 let userStreakDays = 18;
 let completedTrails = 0;
+let lastXPCheckpoint = 0;  // Track XP awards to prevent duplicates
+let lastStreakDate = new Date().toDateString();  // Track daily streaks
 
 const formatDistance = (aLat, aLon, bLat, bLon) => {
   const toRad = (v) => (v * Math.PI) / 180;
@@ -135,13 +137,19 @@ function updateXPDisplay() {
 }
 
 function awardXP(amount) {
+  const oldLevel = userLevel;
   userXP += amount;
-  const levelsGained = Math.floor(userXP / xpPerLevel);
-  if (levelsGained > 0) {
-    userLevel += levelsGained;
-    userXP = userXP % xpPerLevel;
-    showNotification(`🎉 Level Up! You are now Level ${userLevel}!`);
+  
+  // Calculate level ups properly
+  while (userXP >= xpPerLevel) {
+    userXP -= xpPerLevel;
+    userLevel++;
+    
+    if (userLevel > oldLevel) {
+      showNotification(`🎉 Level Up! You are now Level ${userLevel}!`);
+    }
   }
+  
   updateXPDisplay();
 }
 
@@ -288,6 +296,7 @@ function startWalk(trail = currentList[0] || trails[0]) {
   let elevation = 0;
   let steps = 0;
   let heading = 0;
+  let lastAwardedSteps = 0;  // Track last step milestone for XP
 
   clearInterval(walkTicker);
   walkTicker = setInterval(() => {
@@ -307,16 +316,24 @@ function startWalk(trail = currentList[0] || trails[0]) {
     els.walkEta.textContent = `${Math.max(0, Math.round((remaining / 4.8) * 60))}m`;
     els.compassNeedle.style.transform = `rotate(${heading}deg)`;
 
-    // Award XP periodically
-    if (steps % 500 === 0 && steps > 0) {
+    // Award XP at 500 step intervals
+    if (steps >= lastAwardedSteps + 500) {
       awardXP(10);
+      lastAwardedSteps += 500;
     }
 
     // Complete trail
     if (remaining <= 0) {
       stopWalk();
       completedTrails += 1;
-      userStreakDays += 1;
+      
+      // Only increment streak if this is a new day
+      const todayStr = new Date().toDateString();
+      if (todayStr !== lastStreakDate) {
+        userStreakDays += 1;
+        lastStreakDate = todayStr;
+      }
+      
       awardXP(100);
       showNotification(`🎉 Trail completed! +100 XP earned! Streak: ${userStreakDays} days`);
     }
@@ -452,6 +469,14 @@ function analyzeImage() {
 
     const result = catalog[Math.floor(Math.random() * catalog.length)];
     const confidence = (82 + Math.random() * 17).toFixed(1);
+    
+    // Determine danger level CSS class
+    const dangerClass = result.danger === 'Not dangerous' || result.danger === 'Generally safe' 
+      ? 'success' 
+      : result.danger === 'Potentially dangerous' 
+      ? 'warn' 
+      : 'danger';
+    
     els.scanState.textContent = "Scan complete.";
     
     els.aiResult.innerHTML = `
@@ -460,7 +485,7 @@ function analyzeImage() {
         <p><strong>Scientific:</strong> <em>${result.sci}</em></p>
         <p>${result.note}</p>
         <p><strong>Toxicity:</strong> <span class="muted">${result.toxicity}</span></p>
-        <p><strong>Danger Level:</strong> <span class="${result.danger === 'Not dangerous' ? 'success' : 'warn'}">${result.danger}</span></p>
+        <p><strong>Danger Level:</strong> <span class="${dangerClass}">${result.danger}</span></p>
         <p><strong>Native Region:</strong> ${result.native}</p>
         <p><strong>Similar Species:</strong> Local variants and relatives</p>
         <p><strong>Confidence Score:</strong> <strong>${confidence}%</strong></p>
